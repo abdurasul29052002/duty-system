@@ -9,7 +9,10 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.TreeSet;
 
 @Service
 public class UserService {
@@ -34,7 +37,10 @@ public class UserService {
     }
 
     public HttpEntity<?> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAllByEnabled(true));
+        List<User> allByEnabled = userRepository.findAllByEnabled(true);
+        TreeSet<User> treeSet = new TreeSet<>(Comparator.comparing(User::getFullName));
+        treeSet.addAll(allByEnabled);
+        return ResponseEntity.ok(treeSet);
     }
 
     public ApiResponse deleteUserById(Long id) {

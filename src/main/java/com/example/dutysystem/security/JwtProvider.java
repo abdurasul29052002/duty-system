@@ -1,16 +1,27 @@
 package com.example.dutysystem.security;
 
+import com.example.dutysystem.entity.Duty;
+import com.example.dutysystem.entity.User;
+import com.example.dutysystem.repository.DutyRepository;
+import com.example.dutysystem.service.DutyService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcProperties;
 import org.springframework.security.config.annotation.rsocket.RSocketSecurity;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.TimerTask;
 
 @Component
 public class JwtProvider {
+
+    @Autowired
+    DutyRepository dutyRepository;
 
     private final long validityPeriod = 1000*60*60*24;
     private final String secretKey = "ThisIsSecretWord123456789";

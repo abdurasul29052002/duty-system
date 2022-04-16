@@ -45,15 +45,14 @@ public class AuthService implements UserDetailsService {
         return optionalUser.orElseThrow(()->new RuntimeException("User not found"));
     }
 
-    public ApiResponse loginUser(LoginDto loginDto, HttpServletResponse httpServletResponse) {
+    public ApiResponse loginUser(LoginDto loginDto) {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                     loginDto.getUsername(),
                     loginDto.getPassword()
             ));
             String token = jwtProvider.generateToken(loginDto.getUsername());
-            httpServletResponse.setHeader("Authorization",token);
-            return new ApiResponse("Login successfully",true);
+            return new ApiResponse("Login successfully",true,token);
         }catch (Exception e){
             return new ApiResponse("Username or password error",false);
         }

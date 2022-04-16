@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface DutyRepository extends JpaRepository<Duty, Long> {
     @Query(value = "select duty.* from users join duty_users join duty on duty_users.duty_id = duty.id on users.id = duty_users.users_id where users.id=:user_id", nativeQuery = true)
     List<Duty> findByUser(@Param("user_id") Long userId);
+
 }

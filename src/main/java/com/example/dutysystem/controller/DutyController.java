@@ -2,6 +2,7 @@ package com.example.dutysystem.controller;
 
 import com.example.dutysystem.payload.ApiResponse;
 import com.example.dutysystem.payload.DutyDto;
+import com.example.dutysystem.payload.VoteDto;
 import com.example.dutysystem.service.DutyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -23,7 +24,7 @@ public class DutyController {
 
     @GetMapping
     public HttpEntity<?> getAllDuties(){
-        return dutyService.getAllDuties();
+        return ResponseEntity.ok(dutyService.getAllDuties());
     }
 
     @GetMapping("/{id}")
@@ -36,6 +37,11 @@ public class DutyController {
         return dutyService.getDutyByUserId(userId);
     }
 
+    @GetMapping("/currentDuty/{dutyId}")
+    public HttpEntity<?> getCurrentDutyByDutyId(@PathVariable Long dutyId){
+        return dutyService.getCurrentDutyByDutyId(dutyId);
+    }
+
     @PutMapping("/addUser/{id}")
     public HttpEntity<?> addUserToDuty(@RequestBody DutyDto dutyDto,@PathVariable Long id){
         ApiResponse apiResponse = dutyService.addUserToDuty(dutyDto,id);
@@ -46,6 +52,18 @@ public class DutyController {
     public HttpEntity<?> deleteUserFromDuty(@RequestBody DutyDto dutyDto, @PathVariable Long id){
         ApiResponse apiResponse = dutyService.deleteUserFromDuty(dutyDto,id);
         return ResponseEntity.status(apiResponse.isSuccess()?204:409).body(apiResponse);
+    }
+
+    @PutMapping("/completeDuty/{id}")
+    public HttpEntity<?> completeDuty(@RequestBody VoteDto voteDto,@PathVariable Long id) {
+        ApiResponse apiResponse = dutyService.completeDuty(voteDto, id);
+        return ResponseEntity.status(apiResponse.isSuccess()?202:409).body(apiResponse);
+    }
+
+    @PutMapping("/setCurrentDuty/{dutyId}")
+    public HttpEntity<?> setCurrentDuty(@PathVariable Long dutyId,@RequestParam Long userId){
+        ApiResponse apiResponse = dutyService.setCurrentDuty(dutyId,userId);
+        return ResponseEntity.status(apiResponse.isSuccess()?202:409).body(apiResponse);
     }
 
     @DeleteMapping("/{id}")
