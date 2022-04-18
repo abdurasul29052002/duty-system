@@ -9,16 +9,17 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.TreeSet;
 
 @Service
 public class UserService {
 
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    CastService castService;
 
     public ApiResponse updateUser(UserDto userDto,Long id) {
         Optional<User> optionalUser = userRepository.findById(id);
@@ -33,14 +34,18 @@ public class UserService {
 
     public HttpEntity<?> getUserById(Long id) {
         Optional<User> optionalUser = userRepository.findById(id);
-        return ResponseEntity.status(optionalUser.isPresent()?200:409).body(optionalUser.orElse(null));
+        if (!optionalUser.isPresent())
+            return ResponseEntity.status(404).body(new ApiResponse("User not found",false));
+        return ResponseEntity.ok(castService.toUserDto(optionalUser.get()));
     }
 
     public HttpEntity<?> getAllUsers() {
         List<User> allByEnabled = userRepository.findAllByEnabled(true);
-        TreeSet<User> treeSet = new TreeSet<>(Comparator.comparing(User::getFullName));
-        treeSet.addAll(allByEnabled);
-        return ResponseEntity.ok(treeSet);
+        List<UserDto> userDtoList = new ArrayList<>();
+        for (User user : allByEnabled) {
+            userDtoList.add(castService.toUserDto(user));
+        }
+        return ResponseEntity.ok(userDtoList);
     }
 
     public ApiResponse deleteUserById(Long id) {
@@ -56,5 +61,10 @@ public class UserService {
     public HttpEntity<?> getUserByUsername(String username) {
         Optional<User> optionalUser = userRepository.findByUsernameAndEnabled(username,true);
         return ResponseEntity.status(optionalUser.isPresent()?200:409).body(optionalUser.orElse(null));
+    }
+
+    public HttpEntity<?> searchUser(String username) {
+        List<User> search = userRepository.search(username);
+        return ResponseEntity.ok(search);
     }
 }

@@ -10,7 +10,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DutyRepository extends JpaRepository<Duty, Long> {
-    @Query(value = "select duty.* from users join duty_users join duty on duty_users.duty_id = duty.id on users.id = duty_users.users_id where users.id=:user_id", nativeQuery = true)
+    @Query(value = "select duty.* from users join duty_users join duty on duty_users.duty_id = duty.id on users.id = duty_users.users_id where users.id=:user_id and duty.active=true", nativeQuery = true)
     List<Duty> findByUser(@Param("user_id") Long userId);
 
+    List<Duty> findAllByCreatedByAndActive(Long createdBy, boolean active);
+
+    List<Duty> findAllByActive(boolean active);
+
+    Optional<Duty> findByIdAndActive(Long id, boolean active);
 }

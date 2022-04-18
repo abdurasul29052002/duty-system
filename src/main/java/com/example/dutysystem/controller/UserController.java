@@ -31,6 +31,11 @@ public class UserController {
         return userService.getUserByUsername(username);
     }
 
+    @GetMapping("/search")
+    public HttpEntity<?> searchUser(@RequestParam String username) {
+        return userService.searchUser(username);
+    }
+
     @GetMapping
     public HttpEntity<?> getAllUsers(){
         return userService.getAllUsers();

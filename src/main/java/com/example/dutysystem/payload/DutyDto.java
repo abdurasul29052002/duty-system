@@ -11,12 +11,17 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DutyDto {
+    private Long id;
     @NotNull
     private String name;
 
     private String description;
 
     private List<Long> userIdList;
+
+    private List<UserDto> userDtoList;
+
+    private UserDto currentDuty;
 
     private boolean active=true;
 }

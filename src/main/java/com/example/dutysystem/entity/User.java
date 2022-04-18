@@ -1,5 +1,7 @@
 package com.example.dutysystem.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,8 +24,10 @@ public class User implements UserDetails {
 
     private String fullName;
 
+    @Column(unique = true)
     private String username;
 
+    @JsonIgnore
     private String password;
 
 //    private boolean complete;
@@ -32,15 +36,20 @@ public class User implements UserDetails {
 
 /* UserDetails fields and methods */
 
+    @JsonIgnore
     private boolean accountNonExpired = true;
 
+    @JsonIgnore
     private boolean accountNonLocked = true;
 
+    @JsonIgnore
     private boolean credentialsNonExpired = true;
 
+    @JsonIgnore
     private boolean enabled = true;
 
 
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return new ArrayList<>();

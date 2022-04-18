@@ -52,7 +52,7 @@ public class AuthService implements UserDetailsService {
                     loginDto.getPassword()
             ));
             String token = jwtProvider.generateToken(loginDto.getUsername());
-            return new ApiResponse("Login successfully",true,token);
+            return new ApiResponse("Login successfully",true,token,userRepository.findByUsername(loginDto.getUsername()).orElse(null).getId());
         }catch (Exception e){
             return new ApiResponse("Username or password error",false);
         }

@@ -1,6 +1,7 @@
 package com.example.dutysystem.component;
 
 import com.example.dutysystem.entity.Duty;
+import com.example.dutysystem.entity.User;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
@@ -16,7 +17,7 @@ public class Auditing implements AuditorAware<Long> {
         if (authentication != null
                 && authentication.isAuthenticated()
                 && !authentication.getPrincipal().equals("anonymousUser")) {
-            Duty principal = (Duty) authentication.getPrincipal();
+            User principal = (User) authentication.getPrincipal();
             return Optional.of(principal.getId());
         }
         return Optional.empty();

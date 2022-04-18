@@ -18,7 +18,7 @@ public class DutySystemApplication {
     @Autowired
     TimerConfiguration timerConfiguration;
 
-    private static final long period = 1000 * 60*10;
+    private static final long period = 1000 * 60;
     private static TimerConfiguration staticTimer;
 
     public static void main(String[] args) {

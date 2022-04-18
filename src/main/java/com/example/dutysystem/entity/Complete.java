@@ -26,6 +26,4 @@ public class Complete {
     @JsonIgnore
     @ManyToOne
     private User user;
-
-
 }

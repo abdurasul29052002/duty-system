@@ -5,6 +5,7 @@ import com.example.dutysystem.entity.Duty;
 import com.example.dutysystem.entity.User;
 import com.example.dutysystem.payload.ApiResponse;
 import com.example.dutysystem.payload.DutyDto;
+import com.example.dutysystem.payload.UserDto;
 import com.example.dutysystem.payload.VoteDto;
 import com.example.dutysystem.repository.CompleteRepository;
 import com.example.dutysystem.repository.DutyRepository;
@@ -12,9 +13,13 @@ import com.example.dutysystem.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class DutyService {
@@ -25,14 +30,16 @@ public class DutyService {
     UserRepository userRepository;
     @Autowired
     CompleteRepository completeRepository;
+    @Autowired
+    CastService castService;
 
     public ApiResponse addDuty(DutyDto dutyDto) {
         Duty duty = new Duty();
         duty.setName(dutyDto.getName());
         duty.setDescription(dutyDto.getDescription());
         duty.setUsers(new ArrayList<>());
-        dutyRepository.save(duty);
-        return new ApiResponse("Duty saved", true);
+        Duty savedDuty = dutyRepository.save(duty);
+        return new ApiResponse("Duty saved", true, savedDuty.getId());
     }
 
     public ApiResponse addUserToDuty(DutyDto dutyDto, Long id) {
@@ -45,11 +52,19 @@ public class DutyService {
             if (!optionalUser.isPresent())
                 return new ApiResponse("User not found", false);
             User user = optionalUser.get();
-            duty.getUsers().add(user);
-            Complete complete = new Complete();
-            complete.setDuty(duty);
-            complete.setUser(user);
-            completeRepository.save(complete);
+            if (!completeRepository.existsByUserIdAndDutyId(user.getId(), duty.getId())) {
+                Complete complete = new Complete();
+                complete.setDuty(duty);
+                complete.setUser(user);
+                completeRepository.save(complete);
+            }
+            if (!duty.getUsers().contains(user)) {
+                duty.getUsers().add(user);
+            }
+        }
+        if (duty.getCurrentDuty() == null) {
+            Optional<User> firstDuty = userRepository.findById(dutyDto.getUserIdList().get(0));
+            duty.setCurrentDuty(firstDuty.orElse(null));
         }
         dutyRepository.save(duty);
         return new ApiResponse("All users added to Duty", true);
@@ -62,41 +77,57 @@ public class DutyService {
         Duty duty = optionalDuty.get();
         duty.setActive(false);
         dutyRepository.save(duty);
-        return new ApiResponse("Duty deleted", false);
+        return new ApiResponse("Duty deleted", true);
     }
 
-    public ApiResponse deleteUserFromDuty(DutyDto dutyDto, Long id) {
+    public ApiResponse deleteUserFromDuty(Long userId, Long id) {
         Optional<Duty> optionalDuty = dutyRepository.findById(id);
         if (!optionalDuty.isPresent())
             return new ApiResponse("Duty not found", false);
         Duty duty = optionalDuty.get();
-        for (Long userId : dutyDto.getUserIdList()) {
-            Optional<User> optionalUser = userRepository.findById(userId);
-            if (!optionalUser.isPresent())
-                return new ApiResponse("User not found", false);
-            duty.getUsers().remove(optionalUser.get());
-        }
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if (!optionalUser.isPresent())
+            return new ApiResponse("User not found", false);
+        duty.getUsers().remove(optionalUser.get());
         dutyRepository.save(duty);
         return new ApiResponse("All users deleted from Duty", true);
     }
 
-    public List<Duty> getAllDuties() {
-        return dutyRepository.findAll();
+    public List<DutyDto> getAllDuties() {
+        List<Duty> dutyList = dutyRepository.findAllByActive(true);
+        List<DutyDto> dutyDtoList = new ArrayList<>();
+        for (Duty duty : dutyList) {
+            dutyDtoList.add(castService.toDutyDto(duty));
+        }
+        return dutyDtoList;
     }
 
     public HttpEntity<?> getDutyById(Long id) {
-        Optional<Duty> optionalDuty = dutyRepository.findById(id);
-        return ResponseEntity.status(optionalDuty.isPresent() ? 200 : 409).body(optionalDuty.orElse(null));
+        Optional<Duty> optionalDuty = dutyRepository.findByIdAndActive(id, true);
+        if (!optionalDuty.isPresent())
+            return ResponseEntity.status(409).body(new ApiResponse("Duty not found", false));
+        Duty duty = optionalDuty.get();
+        return ResponseEntity.ok(castService.toDutyDto(duty));
     }
 
     public HttpEntity<?> getDutyByUserId(Long userId) {
         List<Duty> byUser = dutyRepository.findByUser(userId);
-        return ResponseEntity.ok(byUser);
+        List<DutyDto> dutyDtoList = new ArrayList<>();
+        for (Duty duty : byUser) {
+            dutyDtoList.add(castService.toDutyDto(duty));
+        }
+        return ResponseEntity.ok(dutyDtoList);
     }
 
     public HttpEntity<?> getCurrentDutyByDutyId(Long dutyId) {
-        Optional<Duty> optionalDuty = dutyRepository.findById(dutyId);
-        return ResponseEntity.status(optionalDuty.isPresent() ? 200 : 409).body(optionalDuty.get().getCurrentDuty());
+        try {
+            Optional<Duty> optionalDuty = dutyRepository.findById(dutyId);
+            Duty duty = optionalDuty.orElse(new Duty());
+            UserDto userDto = castService.toUserDto(duty.getCurrentDuty());
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            return ResponseEntity.status(409).body(new ApiResponse("Something error", false));
+        }
     }
 
     public ApiResponse completeDuty(VoteDto voteDto, Long id) {
@@ -108,8 +139,13 @@ public class DutyService {
         if (!optionalUser.isPresent())
             return new ApiResponse("User not found", false);
         User user = optionalUser.get();
+        User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long dutyAdminId = duty.getCreatedBy();
+        if (!Objects.equals(principal.getId(), dutyAdminId)) {
+            return new ApiResponse("You is not owner this duty", false);
+        }
         for (Complete complete : user.getCompleteList()) {
-            if (complete.getDuty().getId() == duty.getId()) {
+            if (Objects.equals(complete.getDuty().getId(), duty.getId())) {
                 complete.setCompleted(true);
                 completeRepository.save(complete);
                 return new ApiResponse("Completed", true);
@@ -133,6 +169,14 @@ public class DutyService {
         }
         duty.setCurrentDuty(user);
         dutyRepository.save(duty);
-        return new ApiResponse("This user is current duty",true);
+        return new ApiResponse("This user is current duty", true);
+    }
+
+    public HttpEntity<?> getDutyByAdminId(Long adminId) {
+        List<DutyDto> dutyDtoList = new ArrayList<>();
+        for (Duty duty : dutyRepository.findAllByCreatedByAndActive(adminId, true)) {
+            dutyDtoList.add(castService.toDutyDto(duty));
+        }
+        return ResponseEntity.ok(dutyDtoList);
     }
 }

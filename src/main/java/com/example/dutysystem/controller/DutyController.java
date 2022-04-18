@@ -37,6 +37,11 @@ public class DutyController {
         return dutyService.getDutyByUserId(userId);
     }
 
+    @GetMapping("/byAdmin/{adminId}")
+    public HttpEntity<?> getDutyByAdminId(@PathVariable Long adminId){
+        return dutyService.getDutyByAdminId(adminId);
+    }
+
     @GetMapping("/currentDuty/{dutyId}")
     public HttpEntity<?> getCurrentDutyByDutyId(@PathVariable Long dutyId){
         return dutyService.getCurrentDutyByDutyId(dutyId);
@@ -48,9 +53,9 @@ public class DutyController {
         return ResponseEntity.status(apiResponse.isSuccess()?202:409).body(apiResponse);
     }
 
-    @PutMapping("/deleteUser/{id}")
-    public HttpEntity<?> deleteUserFromDuty(@RequestBody DutyDto dutyDto, @PathVariable Long id){
-        ApiResponse apiResponse = dutyService.deleteUserFromDuty(dutyDto,id);
+    @PutMapping("/deleteUser")
+    public HttpEntity<?> deleteUserFromDuty(@RequestParam Long userId, @RequestParam Long dutyId){
+        ApiResponse apiResponse = dutyService.deleteUserFromDuty(userId,dutyId);
         return ResponseEntity.status(apiResponse.isSuccess()?204:409).body(apiResponse);
     }
 
@@ -60,8 +65,8 @@ public class DutyController {
         return ResponseEntity.status(apiResponse.isSuccess()?202:409).body(apiResponse);
     }
 
-    @PutMapping("/setCurrentDuty/{dutyId}")
-    public HttpEntity<?> setCurrentDuty(@PathVariable Long dutyId,@RequestParam Long userId){
+    @PutMapping("/setCurrentDuty")
+    public HttpEntity<?> setCurrentDuty(@RequestParam Long dutyId,@RequestParam Long userId){
         ApiResponse apiResponse = dutyService.setCurrentDuty(dutyId,userId);
         return ResponseEntity.status(apiResponse.isSuccess()?202:409).body(apiResponse);
     }
